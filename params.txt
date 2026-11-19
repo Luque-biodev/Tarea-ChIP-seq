@@ -1,0 +1,22 @@
+# ==========================================================
+# params.txt
+# Parámetros del análisis, leídos por download.sh (bash los carga con `source`).
+# Formato: CLAVE="valor", sin espacios alrededor del "=".
+# Para analizar otro factor de transcripción, cambia AGI y TF.
+# ==========================================================
+
+# --- Datos de origen (GEO) ---
+GID="GSE80564"                          # Serie GEO
+AGI="AT4G34000"                         # Identificador AGI del factor de transcripción
+TF="ABF3"                               # Nombre del factor de transcripción
+CONDITION="ABA"                         # Tratamiento
+PEAK_SUFFIX="optimal_narrowPeak_p16"    # Tipo de archivo de picos publicado en GEO
+
+# --- HOMER ---
+GENOME="tair10"                         # Genoma de referencia de HOMER
+HOMER_SIZE=100                          # -size: ventana total alrededor del pico (pb)
+HOMER_LEN=8                             # -len: longitud del motivo (pb)
+
+# --- Rutas ---
+DATA_DIR="data/${GID}"                  # Carpeta de los datos descargados
+RESULTS_DIR="results${TF}"              # Carpeta de salidas (la misma que usa el script de R)

@@ -1,0 +1,870 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Análisis del reguloma de ABF3 en *Arabidopsis thaliana* basado en datos de ChIP-seq
+
+#### Autores:
+
+Fernández Rodríguez, Alicia
+
+Luque Sánchez, Pablo Matías
+
+## Introducción
+
+### Antecedentes
+
+La respuesta de las plantas a estreses ambientales depende de redes
+complejas de regulación transcripcional. El factor de transcripción
+**ABF3 (*ABRE-Binding Factor 3*)** es un regulador clave de la respuesta
+al estrés abiótico en plantas, especialmente en procesos mediados por el
+**ácido abscísico (ABA)**, una fitohormona central en la adaptación a
+condiciones de sequía, salinidad y estrés osmótico. ABF3 pertenece a la
+familia de factores de transcripción bZIP del grupo **AREB/ABF**,
+caracterizados por su capacidad para reconocer y unirse a elementos
+*cis* **ABRE (*Abscisic Acid Responsive Elements*)** presentes en los
+promotores de numerosos genes inducidos por ABA.
+
+Estudios genéticos y funcionales han demostrado que ABF3 actúa como
+activador transcripcional, integrando señales ambientales y hormonales
+para modular la expresión de genes implicados en la tolerancia al
+estrés, el cierre estomático y la protección celular (Yoshida *et al.*,
+2010).
+
+Aunque se ha establecido el papel funcional de ABF3 en la regulación de
+genes individuales, la identificación sistemática de sus regiones de
+unión permite analizar su contribución específica dentro de la red de
+respuesta al estrés en *Arabidopsis thaliana*. Este enfoque resulta
+esencial para relacionar la ocupación de ABF3 con procesos biológicos
+concretos y para comprender los mecanismos moleculares que subyacen a la
+adaptación de las plantas a condiciones ambientales adversas.
+
+### Objetivo
+
+En *Arabidopsis thaliana*, el ácido abscísico es clave para ayudar a la
+planta a adaptarse a condiciones de estrés hídrico y salino. ABA modula
+la actividad de otros factores de transcripción y la expresión de un
+amplio repertorio de genes. En este contexto, el estudio de Song *et
+al.*, (2017) llevó a cabo una caracterización sistemática de la red
+reguladora de ABA mediante el **análisis ChIP-seq de 21 factores de
+transcripción**, permitiendo definir una jerarquía funcional entre ellos
+y describir sus patrones de unión genómica.
+
+El objetivo del presente trabajo es identificar el **reguloma del factor
+de transcripción ABF3** en *Arabidopsis thaliana*, a partir de datos
+ChIP-seq disponibles públicamente. Para ello, se analizan las regiones
+genómicas de unión de ABF3, se asocian los picos identificados a genes
+diana potenciales y se realiza un análisis de enriquecimiento de motivos
+de ADN y de funciones biológicas. El estudio se centra en una
+caracterización estática de la unión de ABF3, sin realizar análisis de
+ocupancia o unión diferencial entre condiciones, con el fin de obtener
+una visión funcional de su papel regulador dentro de la red de respuesta
+mediada por ABA.
+
+## Materiales y Métodos
+
+### Diseño Experimental
+
+El conjunto completo de datos analizados en este estudio procede del
+trabajo de Song *et al.*, (2017) y se encuentra depositado en la base de
+datos **Gene Expression Omnibus (GEO)** bajo los números de acceso
+**GSE80564** y **GSE80568**. En particular, el presente trabajo utiliza
+los datos ChIP-seq disponibles en **GSE80564** junto a otros
+experimentos de inmunoprecipitación de cromatina para múltiples factores
+de transcripción implicados en la respuesta mediada por ácido abscísico
+en *Arabidopsis thaliana*.
+
+En este estudio se analizaron 21 factores de transcripción relacionados
+con la vía de ABA, pertenecientes a 11 familias distintas, seleccionados
+en base a su elevada expresión y a su capacidad de respuesta al
+tratamiento con ABA. Para garantizar la relevancia biológica de los
+experimentos, los genes que codifican estos factores de transcripción
+fueron etiquetados con epítopos (como **YPet-6xHis-3xFLAG**) y
+expresados bajo sus promotores nativos y en su contexto genómico
+original en líneas transgénicas. La inmunoprecipitación de la cromatina
+se realizó utilizando un anticuerpo policlonal de conejo **anti-GFP**, y
+los experimentos ChIP-seq se llevaron a cabo 4 horas después del
+tratamiento, un punto temporal seleccionado a partir de análisis previos
+de RNA-seq que indicaron que la mayoría de los eventos regulatorios
+tempranos ocurren dentro de este intervalo.
+
+**Descripción de las muestras utilizadas en el estudio**
+
+-   **Muestras ChIP (inmunoprecipitación de cromatina)**
+
+    -   El estudio incluye experimentos ChIP-seq dirigidos a múltiples
+        factores de transcripción (FTs) de *Arabidopsis thaliana*, cada
+        uno identificado por su gen AGI (por ejemplo, NFYB2, ABF1, GBF3,
+        DREB2A, MYB44, entre otros).
+
+    -   Las muestras ChIP se obtuvieron bajo dos condiciones
+        experimentales:
+
+        -   **Tratamiento con ácido abscísico 10 M (ABA)**, una hormona
+            clave en la respuesta al estrés.
+
+        -   **Tratamiento control con etanol (EtOH)**, utilizado como
+            disolvente del ABA.
+
+    -   Cada condición (ABA y EtOH) cuenta con **tres réplicas
+        biológicas independientes**, generando pares comparables de
+        experimentos para cada FT.
+
+-   **Control de fondo (Mock IP):**
+
+    -   Como control del ruido de fondo asociado a la fragmentación y
+        secuenciación del ADN, el estudio incluye muestras **Mock ChIP**
+        realizadas en plantas **Col-0**, en las que no se
+        inmunoprecipita ningún factor de transcripción específico. Estas
+        muestras control permiten modelar la distribución basal de
+        lecturas a lo largo del genoma y son utilizadas durante el
+        proceso de *peak calling* para distinguir señal específica de
+        unión del factor de transcripción frente a señal inespecífica.
+
+        -   Col0_mockChIP_rep1
+
+        -   Col0_mockChIP_rep2
+
+### Flujo de trabajo
+
+El análisis de datos de ChIP-seq parte de los archivos crudos de
+secuenciación (*FASTQ*), que contienen las lecturas cortas obtenidas
+tras la inmunoprecipitación de la proteína de interés y de un control de
+fondo. En el estudio, en lugar de utilizar una muestra Input genómica,
+se emplea un **Mock ChIP**, en el que se sigue exactamente el mismo
+protocolo que con la muestra ChIP pero se añade un anticuerpo
+inespecífico, obteniendo así la inmunoprecipitación inespecífica del
+fondo. Antes del alineamiento, los archivos FASTQ se someten a un
+control de calidad con herramientas como **FastQC** para detectar sesgos
+de secuenciación, baja calidad de bases o contaminación por adaptadores.
+Posteriormente, las lecturas se alinean contra un genoma de referencia
+utilizando **Bowtie2**, y los alineamientos se procesan con **Samtools**
+para generar archivos binarios ordenados (BAM), que constituyen la base
+para los análisis posteriores.
+
+A continuación, se identifican las regiones genómicas enriquecidas en
+lecturas de la muestra ChIP frente al Mock mediante algoritmos de *peak
+calling* como **MACS2**. Este paso se basa en modelos estadísticos que
+permiten distinguir señal biológica real del ruido de fondo, generando
+como resultado archivos en formato BED que definen los picos de unión
+del factor de transcripción. Otros archivos generados de interés son los
+*.narrowPeak* con coordenadas de los picos y tablas *.xls* con valores
+de *p-value* y *fold change*. En concreto, el *peak calling* se realizó
+utilizando un umbral de significancia de *p-value* menor o igual que
+1e-6 para la detección de picos estrechos (*narrow peaks*)
+característicos de factores de transcripción. Como control de fondo se
+emplearon muestras Mock ChIP en lugar de una muestra input genómica,
+permitiendo una estimación más precisa del ruido experimental. Para el
+análisis posterior se utilizaron los picos óptimos (*optimal peaks*) ya
+integrados a partir de las réplicas biológicas reproducibles,
+centrándonos en una caracterización estática del reguloma de ABF3 bajo
+tratamiento.
+
+Como parte del preprocesamiento de los archivos de picos y del análisis
+de motivos de ADN, se realizaron una serie de pasos adicionales mediante
+scripts en Bash. Estos pasos incluyeron la re-anotación del formato de
+los cromosomas para asegurar la compatibilidad con las herramientas
+posteriores y la ejecución del análisis de enriquecimiento de motivos
+mediante HOMER. A continuación se muestra y comenta el script utilizado.
+El archivo de picos original contiene los cromosomas con el prefijo
+"chr" (por ejemplo, chr1, chr2, chr3, etc.). Sin embargo, algunas
+herramientas, como HOMER con el genoma tair10, esperan una notación
+numérica (1, 2, 3, ...). Para garantizar la compatibilidad, se elimina
+el prefijo "chr" utilizando sed.
+
+```{bash}
+# sed 's/^chr//' GSE80564_AT4G34000_ABF3_ABA_optimal_narrowPeak_p16.bed > GSE80564_AT4G34000_ABF3_ABA_optimal_narrowPeak_p16_reanotado.bed
+```
+
+Finalmente, los picos identificados se asocian a genes diana mediante
+criterios de proximidad al **sitio de inicio de la transcripción (TSS)**
+para poder definir el reguloma del factor de transcripción.
+Paralelamente, las secuencias correspondientes a los picos se analizan
+para **enriquecimiento de motivos de ADN** con **HOMER**, identificando
+secuencias consenso reconocidas por el factor o por otros reguladores
+cooperativos. Para ello se utilizó como referencia el genoma **tair10**
+de *Arabidopsis thaliana* y se analizaron ventanas de ±100 pares de
+bases (*size*) centradas en el máximo de cada pico de unión, lo que
+permite capturar las secuencias *cis* más directamente asociadas a la
+unión del factor de transcripción. Asimismo, se estableció una longitud
+de motivo de 8 pb (*len*), acorde con el tamaño típico de los elementos
+ABRE reconocidos por factores de transcripción de la familia bZIP, como
+ABF3.
+
+```{bash}
+# findMotifsGenome.pl GSE80564_AT4G34000_ABF3_ABA_optimal_narrowPeak_p16_reanotado.bed \
+# tair10 \
+# dnaMotifs \
+# -size 100 \
+# -len 8
+```
+
+![Esquema general del flujo de análisis seguido en el estudio. Se
+muestran las principales etapas del procesamiento de datos ChIP-seq,
+desde el control de calidad de las lecturas crudas, el alineamiento al
+genoma de referencia y la identificación de picos de unión mediante
+MACS2, hasta la anotación genómica, análisis de motivos y
+caracterización funcional del reguloma de ABF3.](images/workflow1.png)
+
+El flujo de trabajo seguido en este estudio se resume en la Figura 1,
+que integra de forma esquemática las principales etapas del análisis
+ChIP-seq, desde el procesamiento de los datos crudos hasta la
+caracterización funcional del reguloma de ABF3. Se emplearon muestras
+**Mock ChIP** como control de fondo y se analizaron directamente los
+picos óptimos (*optimal narrow peaks*) previamente integrados a partir
+de réplicas biológicas reproducibles, centrando el estudio en una
+caracterización estática de la unión de ABF3 bajo tratamiento con ABA.
+
+Las regiones de unión identificadas se anotaron genómicamente mediante
+**ChIPseeker**, asignándolas a estructuras génicas y a genes diana
+potenciales en función de su proximidad al sitio de inicio de la
+transcripción (±1 kb del TSS). A partir de este conjunto de genes se
+realizaron análisis de enriquecimiento funcional (**GO** y **KEGG**) y
+de motivos de ADN mediante **HOMER**, permitiendo integrar la
+información de ocupación genómica con funciones biológicas y patrones de
+reconocimiento de ADN asociados a ABF3.
+
+## Resultados
+
+### Análisis de la distribución global del Cistroma
+
+En primer lugar, se definen las rutas de entrada y salida del análisis.
+Los datos de entrada se localizan en el directorio de trabajo, mientras
+que los resultados generados durante el análisis se almacenan en una
+carpeta específica para el factor de transcripción ABF3.
+
+```{r}
+#Guardar dirección donde se almacenan los datos de entrada
+data_folder <- file.path(".")
+
+
+#Crear carpeta para almacenar las salidas
+results_folder <- file.path(".", "resultsABF3")
+dir.create(results_folder, showWarnings = FALSE, recursive = TRUE)
+```
+
+Esta sección constituye la rama central del análisis, donde se realiza
+la anotación genómica de los picos de unión de ABF3 y su caracterización
+global. Para ello se emplea el paquete **ChIPseeker**, utilizando como
+referencia la anotación genómica de *Arabidopsis thaliana* incluida en
+el objeto `TxDb.Athaliana.BioMart.plantsmart28`. Primero, se cargaron
+los picos en formato *.bed* mediante la función `readPeakFile`.
+
+```{r}
+library(ChIPseeker)
+library(TxDb.Athaliana.BioMart.plantsmart28)
+
+txdb <- TxDb.Athaliana.BioMart.plantsmart28
+
+ABF3.peaks <- readPeakFile(
+peakfile = file.path(
+data_folder,
+"GSE80564_AT4G34000_ABF3_ABA_optimal_narrowPeak_p16_reanotado.bed"
+),
+header = FALSE
+)
+```
+
+El conjunto de datos contiene **11 273 picos**, que representan las
+regiones *cis* potencialmente unidas por ABF3 bajo condiciones de
+tratamiento con ABA.
+
+```{r}
+length(ABF3.peaks)
+```
+
+Los picos se anotan con respecto a estructuras génicas, definiendo una
+ventana de ±1 kb alrededor del **sitio de inicio de la transcripción
+(TSS)**, lo que permite identificar regiones promotoras.
+
+```{r}
+ABF3.peak.annotation <- annotatePeak(peak = ABF3.peaks,TxDb = txdb,tssRegion = c(-1000, 1000))
+
+```
+
+A continuación, se explora la distribución global de los picos anotados
+mediante distintas representaciones gráficas que permiten evaluar la
+localización preferente de ABF3 a lo largo del genoma. Este control de
+calidad nos permitirá evaluar la distribución de los picos sobre las
+distintas estructuras génicas usando pie chart, bar plot y distancia al
+TSS.
+
+```{r}
+png(file.path(results_folder, "ABF3_peak_annotation_pie.png"))
+plotAnnoPie(ABF3.peak.annotation)
+dev.off()
+```
+
+![Distribución de los picos de unión de ABF3 según su localización
+genómica. La mayoría de los picos se localizan en regiones promotoras,
+definidas como ±1 kb alrededor del TSS, lo que es consistente con la
+función de ABF3 como factor de transcripción regulador de la expresión
+génica.](resultsABF3/ABF3_peak_annotation_pie.png)
+
+En este gráfico tipo *pie* o de sectores podemos apreciar que un
+**83.39%** de las lecturas para ABF3 se localizan en regiones que actúan
+como promotor. Este resultado es acorde al hecho de que ABF3 es un
+factor de transcripción y regula la expresión de un gen uniendose a su
+promotor.
+
+```{r}
+png(file.path(results_folder, "ABF3_peak_annotation_bar.png"))
+plotAnnoBar(ABF3.peak.annotation)
+dev.off()
+```
+
+![Representación en barras de la anotación genómica de los picos de
+ABF3. Se observa un claro enriquecimiento en regiones promotoras/TSS,
+seguido de regiones intergénicas y, en menor proporción, regiones UTR,
+lo que refuerza el papel principal de ABF3 como regulador
+transcripcional directo.](resultsABF3/ABF3_peak_annotation_bar.png)
+
+El *barplot* de anotación genómica revela que una fracción significativa
+de los picos se asigna a **promotores/TSS**, seguida de picos
+localizados en regiones intergénicas y, en menor proporción, en regiones
+3'UTR. Esta distribución sugiere que ABF3 actúa principalmente como
+regulador transcripcional clásico, demostrando que prácticamente no se
+une a regiones intragénicas. Ese fragmento de la proporción que se
+corresponde a distal intergénico podría implicar una regulación más
+compleja de la respuesta al estrés mediada por ABA.
+
+```{r}
+png(file.path(results_folder, "ABF3_peak_dist_to_TSS.png"))
+plotDistToTSS(ABF3.peak.annotation)
+dev.off()
+```
+
+![Distribución de la distancia de los picos de ABF3 al sitio de inicio
+de la transcripción (TSS). La acumulación de picos en las proximidades
+del TSS indica una fuerte preferencia por regiones promotoras,
+característica típica de factores de transcripción de la familia
+bZIP.](resultsABF3/ABF3_peak_dist_to_TSS.png)
+
+El análisis de la distancia de los picos de ABF3 al sitio de inicio de
+la transcripción muestra una clara acumulación de picos en las
+proximidades del TSS, lo que indica una preferencia de ABF3 por regiones
+promotoras. Esta distribución es consistente con el papel de ABF3 como
+factor de transcripción de la familia bZIP, que regula directamente la
+expresión génica mediante la unión a elementos cis localizados aguas
+arriba de los genes diana.
+
+```{r}
+## Anclaje manual de picos y genes de referencia   
+
+ABF3.table <- read.table(file=file.path(data_folder, "GSE80564_AT4G34000_ABF3_ABA_optimal_narrowPeak_p16_reanotado.bed"),
+                         header = F)
+ABF3.table <- ABF3.table[,1:3]
+head(ABF3.table)
+
+
+ath.genes <- as.data.frame(genes(txdb))
+head(ath.genes)
+
+
+target.genes <- vector(mode = "character",length = nrow(ABF3.table))
+peak.annotation <- vector(mode = "character",length = nrow(ABF3.table))
+
+
+for(i in 1:nrow(ABF3.table))
+{
+  current.chr <- ABF3.table[i,1]
+  current.start <- ABF3.table[i,2]
+  current.end <- ABF3.table[i,3]
+  
+  complete.gene.body <- subset(ath.genes,
+                               seqnames == current.chr &
+                                 start >= current.start &
+                                 end <= current.end)
+  
+  overlap.tss.pos.strand <- subset(ath.genes,
+                                   seqnames == current.chr &
+                                     start >= current.start &
+                                     start <= current.end &
+                                     strand == "+")
+  
+  overlap.tss.neg.strand <- subset(ath.genes,
+                                   seqnames == current.chr &
+                                     end >= current.start & end <= current.end &
+                                     strand == "-")
+  
+  overlap.tes.pos.strand <- subset(ath.genes,
+                                   seqnames == current.chr &
+                                     end >= current.start &
+                                     end <= current.end &
+                                     strand == "+")
+  
+  overlap.tes.neg.strand <- subset(ath.genes,
+                                   seqnames == current.chr &
+                                     start >= current.start &
+                                     start <= current.end &
+                                     strand == "-")
+  
+  inside.gene.body <- subset(ath.genes, seqnames == current.chr &
+                               start <= current.start &
+                               end >= current.end)
+  
+  
+  if(nrow(complete.gene.body) > 0)
+  {
+    target.genes[i] <- paste(unlist(complete.gene.body$gene_id),collapse = ",")
+    peak.annotation[i] <- "gene.body"
+  } else if(nrow(overlap.tss.pos.strand) > 0)
+  {
+    target.genes[i] <- paste(unlist(overlap.tss.pos.strand$gene_id),collapse = ",")
+    peak.annotation[i] <- "TSS"
+  } else if(nrow(overlap.tss.neg.strand) > 0)
+  {
+    target.genes[i] <- paste(unlist(overlap.tss.neg.strand$gene_id),collapse = ",")
+    peak.annotation[i] <- "TSS"
+  } else if(nrow(overlap.tes.pos.strand) > 0)
+  {
+    target.genes[i] <- paste(unlist(overlap.tes.pos.strand$gene_id),collapse = ",")
+    peak.annotation[i] <- "TES"
+  } else if(nrow(overlap.tes.neg.strand) > 0)
+  {
+    target.genes[i] <- paste(unlist(overlap.tes.neg.strand$gene_id),collapse = ",")
+    peak.annotation[i] <- "TES"
+  } else if(nrow(inside.gene.body) > 0)
+  {
+    target.genes[i] <- paste(unlist(inside.gene.body$gene_id),collapse = ",")
+    peak.annotation[i] <- "internal.gene.body"
+  } else
+  {
+    peak.annotation[i] <- "intergenic"
+  }
+}
+
+
+freq.peak.annotation <- table(peak.annotation)
+png(filename = file.path(results_folder, "freq.peak.annotation.pie.png"))
+pie(freq.peak.annotation[c("gene.body",
+                           "internal.gene.body",
+                           "TSS",
+                           "TES",
+                           "intergenic")],
+    labels = c("Full Gene Body",
+               "Gene Body",
+               "TSS",
+               "TES",
+               "Intergenic"),
+    clockwise = T,
+    border = "black",
+    col=c("blue","cyan","green","red","grey"))
+
+dev.off()
+
+```
+
+![Clasificación de los picos de ABF3 según su localización relativa a
+genes mediante un método de anotación manual. Los resultados confirman
+el predominio de picos asociados al TSS y regiones promotoras, en
+concordancia con los análisis realizados mediante
+ChIPseeker.](resultsABF3/freq.peak.annotation.pie.png)
+
+Utilizando una función casera para realizar la anotación, se asignan los
+picos a genes dianas y tipos de región génica diana. El resultado es
+similar al del primer gráfico de sectores comentado, predominando la
+unión al TSS o sitio de inicio de la transcripción.
+
+### Análisis del Reguloma del correspondiente factor de transcripción o marca epigenética.
+
+```{r}
+## Extraer genes asociados a picos
+ABF3.peak.annotation.df <- as.data.frame(ABF3.peak.annotation)
+
+## Filtrar aquellos genes cuyos picos se encuentran en la zona de su promotor
+ABF3.target.genes <- ABF3.peak.annotation.df$geneId[ABF3.peak.annotation.df$annotation == "Promoter"]
+
+length(ABF3.target.genes)
+
+```
+
+El análisis revela un reguloma compuesto por aproximadamente **9400
+genes**. Este elevado número de genes diana es coherente con su papel
+como factor de transcripción clave en la señalización dependiente de
+ABA, integrando señales hormonales y ambientales asociadas al estrés
+abiótico. La amplitud del reguloma sugiere que ABF3 no actúa de forma
+aislada, sino que forma parte de una red reguladora compleja, en
+coordinación con otros factores de transcripción (como miembros de la
+familia bZIP u otros reguladores que reconocen motivos de ADN
+coenriquecidos para ABF3, que se analizarán más adelante), permitiendo
+la modulación de programas transcripcionales a gran escala.
+
+```{r}
+## Guardar lista
+write.table(
+  ABF3.target.genes,
+  file = file.path(results_folder, "target_genes_from_ABF3.peaks.txt"),
+  quote = FALSE,
+  row.names = FALSE,
+  col.names = FALSE
+)
+```
+
+[target_genes_from_ABF3.peaks.txt](/resultsABF3/target_genes_from_ABF3.peaks.txt)
+
+![Visualización de IGV mostrando un pico representativo de unión de ABF3
+en la región promotora del gen AT1G52155. La señal enriquecida en la
+muestra ChIP respalda la asignación de este gen como diana potencial de
+ABF3.](images/AT1G52155_igv.png)
+
+```{r}
+"AT1G52155" %in% ABF3.target.genes
+ABF3.peak.annotation.df$annotation[ABF3.peak.annotation.df$geneId  == "AT1G52155"]
+
+```
+
+![Visualización en IGV de picos de ABF3 en regiones promotoras de los
+genes AT2G16365 y AT2G16367. Estos ejemplos ilustran la capacidad de
+ABF3 para regular genes adyacentes y potencialmente coordinados
+funcionalmente.](images/AT2G16365,AT2G16367_igv.png)
+
+```{r}
+"AT2G16365" %in% ABF3.target.genes
+
+ABF3.peak.annotation.df$annotation[ABF3.peak.annotation.df$geneId  == "AT2G16365"]
+
+
+"AT2G16367" %in% ABF3.target.genes
+
+```
+
+#### **Enriquecimiento funcional GO**
+
+Con el fin de caracterizar funcionalmente el reguloma asociado a ABF3,
+se llevó a cabo un análisis de enriquecimiento basado en **Gene Ontology
+(GO)**. Este enfoque permite identificar procesos biológicos, funciones
+moleculares y componentes celulares que se encuentran
+sobrerrepresentados entre los genes diana del factor de transcripción.
+El análisis GO proporciona así una visión global de los principales
+procesos biológicos regulados por ABF3 y permite contextualizar su papel
+dentro de las respuestas fisiológicas y adaptativas de *Arabidopsis
+thaliana*, especialmente en relación con la señalización hormonal y el
+estrés abiótico.
+
+```{r}
+library(clusterProfiler)
+library(org.At.tair.db)
+library(enrichplot)
+
+ABF3.enrich.go <- enrichGO(
+  gene = ABF3.target.genes,
+  OrgDb = org.At.tair.db,
+  keyType       = "TAIR",
+  ont = "BP",
+  pvalueCutoff = 0.05,
+  qvalueCutoff = 0.05
+)
+
+write.table(
+  as.data.frame(ABF3.enrich.go),
+  file = file.path(results_folder, "GO_ABF3_enrichment.tsv"),
+  sep = "\t",
+  quote = FALSE,
+  row.names = FALSE
+)
+
+```
+
+[target_genes_from_ABF3.peaks.txt](/resultsABF3/GO_ABF3_enrichment.tsv)
+
+```{r}
+png(filename = file.path(results_folder, "GO_ABF3_barplot.png"), width = 1200, height = 1000, res = 150)
+barplot(ABF3.enrich.go,showCategory = 20)
+dev.off()
+```
+
+![Barplot de los 20 procesos biológicos GO más enriquecidos en el
+reguloma de ABF3. Destacan términos asociados a la respuesta a estímulos
+ambientales, estrés abiótico y señalización por ácido abscísico, en
+concordancia con la función conocida de
+ABF3.](resultsABF3/GO_ABF3_barplot.png)
+
+El análisis de enriquecimiento de procesos biológicos del reguloma de
+ABF3 revela una clara sobrerrepresentación de términos relacionados con
+la respuesta a estímulos ambientales, en particular a señales asociadas
+al estrés abiótico. Entre los procesos más enriquecidos destacan la
+respuesta a la intensidad lumínica, respuesta a luz roja o rojo lejano y
+respuesta al frío, lo que sugiere un papel relevante de ABF3 en la
+integración de señales ambientales que afectan al crecimiento y la
+adaptación de la planta.
+
+De forma consistente con su función conocida en la vía del ácido
+abscísico, se observa un enriquecimiento significativo de términos como
+*cellular response to abscisic acid stimulus* y *cellular response to
+abiotic stimulus*, reforzando la implicación directa de ABF3 en la
+regulación transcripcional de genes inducidos por ABA durante
+situaciones de estrés. Asimismo, la presencia de múltiples términos
+relacionados con hipoxia y niveles de oxígeno indica que ABF3 podría
+participar en la coordinación de respuestas metabólicas y fisiológicas
+frente a limitaciones de oxígeno, un tipo de estrés frecuentemente
+asociado a condiciones ambientales adversas.
+
+Finalmente, el enriquecimiento de procesos vinculados a senescencia
+foliar y maduración del desarrollo sugiere que ABF3 no solo actúa en
+respuestas agudas al estrés, sino que también puede influir en
+decisiones de desarrollo a más largo plazo, posiblemente modulando la
+transición hacia estados adaptativos que optimizan la supervivencia bajo
+condiciones desfavorables.
+
+```{r}
+png(filename = file.path(results_folder, "GO_ABF3_dotplot.png"), width = 1200, height = 1000, res = 150)
+dotplot(ABF3.enrich.go,showCategory = 20)
+dev.off()
+```
+
+![Dotplot del enriquecimiento GO del reguloma de ABF3. El tamaño del
+punto indica el número de genes asociados a cada término, mientras que
+el color refleja la significancia estadística. Los procesos relacionados
+con luz, frío y ABA presentan los valores más
+destacados.](resultsABF3/GO_ABF3_dotplot.png)
+
+El *dotplot* permite comparar simultáneamente la proporción de genes del
+reguloma asociados a cada proceso (**GeneRatio**), el tamaño del
+conjunto génico (**Count**) y la significancia estadística. Los términos
+relacionados con respuesta al frío y respuesta a la intensidad lumínica
+presentan los valores de GeneRatio más elevados, indicando que una
+fracción sustancial del reguloma de ABF3 participa en estos procesos.
+
+De forma consistente, los procesos asociados a hipoxia y niveles de
+oxígeno muestran una combinación de GeneRatio moderado y alta
+significancia, lo que sugiere una regulación coordinada de múltiples
+genes implicados en la adaptación metabólica al estrés. Los términos
+relacionados con respuesta al ácido abscísico mantienen una alta
+significancia estadística, reforzando el papel central de ABF3 como
+mediador de la señalización ABA.
+
+Finalmente, procesos como senescencia y ritmos circadianos presentan
+GeneRatio más bajos, lo que indica una participación más específica o
+indirecta dentro del reguloma, pero potencialmente relevante en el
+contexto de la adaptación a largo plazo.
+
+```{r}
+png(filename = file.path(results_folder, "GO_ABF3_emapplot.png"), width = 1200, height = 1000, res = 150)
+emapplot(pairwise_termsim(ABF3.enrich.go),showCategory = 20)
+dev.off()
+```
+
+![Representación en red de los términos GO enriquecidos basada en el
+solapamiento génico. Se observan módulos funcionales interconectados
+relacionados con hipoxia, señales ambientales y respuesta hormonal,
+reflejando la complejidad del reguloma de
+ABF3.](resultsABF3/GO_ABF3_emapplot.png)
+
+Este *emapplot* aporta una visión integradora de los resultados de
+enriquecimiento GO al representar las relaciones de solapamiento génico
+entre los distintos términos biológicos asociados al reguloma de ABF3.
+Los nodos más grandes y con coloración más intensa corresponden a
+procesos altamente significativos y con un elevado número de genes
+compartidos, destacando especialmente los relacionados con la respuesta
+a hipoxia y a niveles de oxígeno, que aparecen como un núcleo central
+fuertemente interconectado.
+
+La conectividad entre términos como *response to hypoxia*, *response to
+decreased oxygen levels* y *cellular response to oxygen levels* indica
+que ABF3 regula conjuntos de genes parcialmente comunes implicados en la
+adaptación a limitaciones de oxígeno, un tipo de estrés frecuentemente
+asociado a condiciones ambientales adversas.
+
+Asimismo, la proximidad de procesos vinculados a señales lumínicas
+(*response to red or far red light*, *response to light intensity*) y a
+la respuesta al frío sugiere una integración de señales ambientales
+diversas dentro del reguloma de ABF3. La presencia de términos
+relacionados con ácido abscísico, senescencia y ritmos circadianos,
+aunque más periféricos, refuerza la idea de que ABF3 actúa como un
+regulador central que conecta respuestas hormonales, ambientales y
+temporales.
+
+#### Enriquecimiento funcional KEGG
+
+De forma complementaria al análisis GO, se realizó un análisis de
+enriquecimiento de rutas metabólicas y de señalización utilizando la
+base de datos KEGG. Este análisis permite integrar los genes regulados
+por ABF3 en rutas biológicas bien definidas, facilitando una
+interpretación de su función en el contexto de los mecanismos de los que
+forma parte.
+
+```{r}
+ABF3.enrich.kegg <- enrichKEGG(gene  = ABF3.target.genes,
+                               organism = "ath",
+                               pAdjustMethod = "BH",
+                               pvalueCutoff  = 0.05)
+```
+
+```{r}
+df.ABF3.enrich.kegg <- as.data.frame(ABF3.enrich.kegg)
+write.csv(df.ABF3.enrich.kegg, 
+          file = file.path(results_folder, "KEGG_ABF3_enrichment.tsv"),
+          row.names = TRUE)
+```
+
+[target_genes_from_ABF3.peaks.txt](/resultsABF3/KEGG_ABF3_enrichment.tsv)
+
+```{r}
+png(filename = file.path(results_folder, "KEGG_ABF3_dotplot.png"), width = 1400, height = 1400, res = 150)
+dotplot(ABF3.enrich.kegg, showCategory = 20)
+dev.off()
+```
+
+![Dotplot del enriquecimiento de rutas KEGG del reguloma de ABF3. El
+tamaño del punto representa el número de genes asociados a cada ruta,
+mientras que el color indica la significancia estadística del
+enriquecimiento.](resultsABF3/KEGG_ABF3_dotplot.png)
+
+En este *dotplot* de enriquecimiento KEGG el término más enriquecido
+corresponde a *Plant hormone signal transduction*, con el mayor
+GeneRatio y número de genes, lo que es totalmente consistente con el
+papel bien establecido de ABF3 como un factor de transcripción central
+en la señalización dependiente de ácido abscísico. Este resultado indica
+que una fracción sustancial de los genes diana de ABF3 participa
+directamente en cascadas hormonales, confirmando su función como
+integrador de señales de estrés.
+
+Además, se observa un enriquecimiento significativo en múltiples rutas
+metabólicas primarias, como metabolismo del carbono,
+glucólisis/gluconeogénesis, metabolismo del piruvato y metabolismo del
+almidón y la sacarosa. Esto sugiere que ABF3 no solo regula genes de
+señalización, sino que también modula de forma indirecta la adaptación
+del metabolismo del carbono a condiciones adversas de estrés para la
+planta.
+
+La presencia de rutas como *MAPK signaling pathway* apunta a una
+interacción entre la señalización hormonal y cascadas de fosforilación,
+reforzando la idea de una red reguladora jerárquica en la que ABF3 actúa
+aguas abajo o en cooperación con otros reguladores de estrés.
+Asimismo,la detección de procesos relacionados con retículo
+endoplasmático, proteostasis y metabolismo de aminoácidos indica una
+reorganización celular amplia en respuesta a señales ambientales.
+
+Finalmente, la aparición de rutas como *circadian rhythm* y
+*photosynthesis* conecta de nuevo la actividad de ABF3 con la
+integración temporal y energética de la respuesta al estrés. En
+conjunto, el análisis KEGG confirma que el reguloma de ABF3 impacta
+tanto en vías de señalización hormonal como en procesos metabólicos y
+fisiológicos clave, apoyando su papel como regulador maestro de la
+respuesta adaptativa en *Arabidopsis thaliana*.
+
+### **Enriquecimiento de Motivos de DNA en los sitios de Unión**
+
+En ChIP-seq, los picos representaban regiones del genoma donde un factor
+proteico se une. Dentro de esas regiones suelen existir secuencias
+consenso por las que tiene afinidad el FT de interés. Homer permite
+identificar estos motivos de ADN de dos maneras:
+
+-   **Motivos conocidos (*Known Motifs*)**: Homer compara nuestras
+    secuencias con una base de datos de motivos previamente reportados
+    para diferentes TFs. Esto permite confirmar si el factor de interés
+    se une a secuencias ya descritas.
+
+-   **Motivos de novo (*de novo Motifs*)**: Homer busca patrones
+    recurrentes en los picos sin referencia previa. Esto puede revelar
+    motivos no conocidos o combinaciones de factores cooperativos.
+
+**Homer de novo Motif Results**
+
+![Resultados de enriquecimiento de motivos de novo (HOMER) en los picos
+de
+ABF3.](images/Homer%20de%20novo%20Motif%20Results%20(table).png){width="680"}
+
+**Homer Known Motif Enrichment Results**
+
+![Resultados de enriquecimiento de motivos conocidos (HOMER) en los
+picos de
+ABF3.](images/Homer%20Known%20Motif%20Enrichment%20Results%20(table).png){width="683"}
+
+El análisis de enriquecimiento de motivos en los picos de unión de ABF3
+refuerza de manera consistente su afinidad por elementos reguladores
+dependientes de ABA. El análisis *de novo* identifica como motivo
+dominante la secuencia **CACGTGGC**, correspondiente a elementos ABRE y
+asociada a factores de la familia **bZIP**, como ABF1, lo que valida la
+especificidad del conjunto de picos obtenidos y la calidad del
+experimento ChIP-seq.
+
+De forma complementaria, el análisis de motivos conocidos revela un
+enriquecimiento significativo de otros motivos bZIP, incluyendo
+**ABI5**, **bZIP28** y **bZIP68**, lo que sugiere una posible
+redundancia funcional o cooperación entre miembros de esta familia en
+regiones reguladoras compartidas. Además, la detección de motivos
+correspondientes a factores **MYB** y **Homeobox** apunta a un escenario
+regulador más complejo, en el que ABF3 podría actuar de manera
+coordinada con otros factores de transcripción.
+
+Estos resultados indican que ABF3 se integra en una red reguladora
+multifactorial, donde la unión directa a elementos ABRE se combina con
+la co-ocupación de regiones *cis* por otros factores. De nuevo, es
+consecuente con el papel relativamente central que aparenta ABF3 en la
+regulación dependiente de ABA.
+
+## Conclusiones
+
+En este trabajo se ha llevado a cabo una caracterización exhaustiva del
+reguloma del factor de transcripción ABF3 en *Arabidopsis thaliana* a
+partir de datos ChIP-seq obtenidos bajo tratamiento con ácido abscísico.
+El análisis de la distribución genómica de los picos de unión revela una
+marcada preferencia de ABF3 por regiones promotoras próximas al sitio de
+inicio de la transcripción, lo que concuerda plenamente con su función
+como regulador transcripcional directo.
+
+La identificación de aproximadamente 9 400 genes diana potenciales pone
+de manifiesto el amplio alcance regulador de ABF3 y refuerza su papel
+como nodo central dentro de la red de respuesta al estrés mediada por
+ABA. Los análisis de enriquecimiento funcional GO y KEGG muestran una
+sobrerrepresentación clara de procesos relacionados con la respuesta a
+estímulos abióticos, incluyendo estrés hídrico, frío, hipoxia y señales
+luminosas, así como respuestas celulares dependientes de ABA. Estos
+resultados son coherentes con los descritos por Song *et al.*, quienes
+sitúan a ABF3 dentro de una jerarquía de factores de transcripción clave
+en la adaptación ambiental.
+
+El análisis de motivos de ADN confirma la presencia predominante de
+motivos ABRE reconocidos por factores bZIP, incluyendo motivos asociados
+a ABF1 y ABI5, lo que valida experimentalmente la especificidad de unión
+de ABF3. Asimismo, la detección de motivos de otros factores como MYB o
+Homeobox sugiere posibles interacciones cooperativas o regulación
+combinatoria en regiones *cis*, ampliando la complejidad de la red
+reguladora.
+
+Como paso futuro para validar estos resultados *in vivo*, sería
+especialmente interesante realizar experimentos de expresión génica
+(**RT-qPCR** o **RNA-seq**) en líneas mutantes *abf3* o en plantas que
+sobreexpresen ABF3, con el fin de confirmar la regulación directa de
+genes diana identificados por ChIP-seq. Adicionalmente, ensayos de
+**ChIP-qPCR** dirigidos a promotores específicos permitirían validar
+experimentalmente la unión de ABF3 a regiones concretas del genoma.
+Finalmente, estudios funcionales combinando mutantes dobles de ABF3 con
+otros factores bZIP podrían esclarecer las interacciones cooperativas
+sugeridas por el análisis de motivos.
+
+En conjunto, estos resultados sugieren que ABF3 no debe interpretarse
+como un regulador central o jerárquicamente dominante dentro de la
+señalización mediada por ABA, sino como un componente profundamente
+integrado en complejos sistemas de cómputo que llamamos redes
+reguladoras. La señalización de ABA se ramifica en múltiples respuestas
+fisiológicas y transcripcionales en función del tipo de estrés, del
+estado de desarrollo y del contexto temporal. Dichas ramas no actúan de
+forma independiente, sino que convergen y divergen nuevamente mediante
+interacciones complejas entre numerosos factores de transcripción. En
+este contexto, ABF3 actúa como un engranaje recurrente que puede
+participar en distintos módulos reguladores, estableciendo conexiones
+variables con otros factores como bZIP, MYB o Homeobox, sin constituir
+un punto único de control. Su relevancia no reside en una posición
+central, sino en su capacidad de integrarse funcionalmente en diferentes
+configuraciones regulatorias, contribuyendo a la plasticidad y robustez
+de las respuestas dependientes de ABA.
+
+## Referencias
+
+-   Song *et al.* (2016). A transcription factor hierarchy defines an
+    environmental stress response network. *Science*, *354*(6312),
+    aag1550.
+
+-   Yoshida *et al.* (2010). AREB1, AREB2, and ABF3 are master
+    transcription factors that cooperatively regulate ABRE-dependent ABA
+    signaling involved in drought stress tolerance and require ABA for
+    full activation. *The Plant journal: for cell and molecular
+    biology*, *61*(4), 672–685.

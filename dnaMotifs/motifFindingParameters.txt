@@ -1,0 +1,1 @@
+cmd = GSE80564_reanotado.bed tair10 dnaMotifs -size 100 -len 8
